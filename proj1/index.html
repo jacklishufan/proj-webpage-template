@@ -1,7 +1,243 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2018</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Shufan Li, CS184-sl</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>This is a class project of CS 184 Computer Graphics at UC Berkeley. In this project, we build a simple rasterizer that renders SVG files. The foundational block is the capacity to render simple-color tringles on the image plane. On top of this we build up additional features to render triangles by vertex color or texture mapping. We also implemented pixel supersampling and mipmaps to reduce the artifact and improve performance. Folllowing SVG spec, we also implement standard transformations such as scale, translation and rotation</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p>To render a single-color trinagle given a set of three points, we iterate over all pixels in the bounding box and fill the framebuffer with assigned color if that pixel is in the triangle. The bounding box is determined by the minimum and maximum values of the x-cordinates and y-cordinates of three points. </p>
+
+<p> The sample point used to determined if a pixel (x,y) is in the triangle is the geometric center (x+0.5,y+0.5). We use the standard three line test to check if a point is in the triangle. Since the vertices of triangles are not sorted, we cannot assume the direction of each edge. Therefore, we additionaly compute the geometric center of the three points and check if the geometric center and the pixel is on the same side of the line. We consider points lying on the edge to be inside the triangle. </p>
+<div align="middle">
+  <img src="images/test4_inspect.png" align="middle" width="400px"/>
+  <figcaption align="middle">An example of single-color triangle render </figcaption>
+</div>
+
+
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+
+
+<p>We implement supersampling, which is very useful to reduce artifacts such as aliasing. 
+  The output is equivalent to applying a low-pass filter on images at a higher resolution.
+  This means on the border of triangles, the pixels will not have a "hard edge" with one pixels filled with color adjancet to an unfilled pixel. Instead, we would see the average between samples in the triangle and samples outside the triangle. 
+  Instead of sampling one point at the geometric center of the pixel, we sample an N X N grid of points in the pixel, where N is the square root of sampling rate. Each of the sample point is the geometric center of a square "block" when subdiving the original pixel by a N X N grid. </p>
+
+<p>In practice, the following changes are made to implement superpixel sampling:</p>
+<li>
+  The size of sample buffer (the number of 3-dimensional color vector it can hold), is changed to width * height * sample_rate from width * height. Where the ith sample of pixel (x,y) is stored at index (y * width + x) * sample_rate + i.  When the sampling rate is changed, the buffer is resized accordingly 
+</li>
+<li>
+  When rasterizing a triangle, we compute whether each of the N X N sample is in the triangle and write to the corresponding sample buffer. At the end of the pipeline, the mean of N x N samples of a pixel is written to the frame buffer.
+</li>
+<li>
+  When filling a pixel with a single color (used to render lines and points), we fill all samples in the sample buffer with identical color.
+</li>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part2_1.png" align="middle" width="300px"/>
+        <figcaption align="middle">1 Sample</figcaption>
+      </td>
+      <td>
+        <img src="images/part2_4.png" align="middle" width="300px"/>
+        <figcaption align="middle">4 Samples</figcaption>
+      </td>
+      <td>
+        <img src="images/part2_16.png" align="middle" width="300px"/>
+        <figcaption align="middle">16 Samples</figcaption>
+      </td>
+    </tr>
+    <br>
+  </table>
+</div>
+
+<p>As expected, 1 sample per pixel leads to hard edge, while higher samples lead to an "average" between in-triangle samples and outside-triangle samples</p>
+
+
+<h3 align="middle">Part 3: Transforms</h3>
+
+<p>We implement standard scale, rotation and translate transforms. We create our own cubeman SVG to show this. This cubeman is about to fall</p>
+<div align="middle">
+  <img src="images/myrobot.png" align="middle" width="400px"/>
+  <figcaption align="middle">An example of transforms </figcaption>
+</div>
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+<p>
+Given vertices of a triangle p0,p1,p2 and a point p in triangle, p can be expressed as \( \alpha p_0 + \beta p_1 + \gamma p_2\) where \( \alpha+\gamma+\beta=1\). The solution of this system exists and is unqiue when three points are not co-linear. A visual example is shown as below, where R,G,B encodes Barycentric coordinates. These cordinates can be used to interpolate vertec colors. 
+</p>
+<div align="middle">
+  <img src="images/cord.png" align="middle" width="400px"/>
+  <figcaption align="middle">An example of Barycentric Coordinates encoded by R,G,B channels.</figcaption>
+</div>
+<div align="middle">
+  <img src="images/test7.png" align="middle" width="400px"/>
+  <figcaption align="middle">A visualization of application of Barycentric coordinate</figcaption>
+</div>
+
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+<p>
+  Another application of Barycentric coordinates is UV texture mapping. Given known UV cordinates of vertices, we can use the Barycentric cordinates to find the UV cordinate of an arbritary point in triangle through convex combinations of UV cordinates of vertices. 
+</p>
+
+<p>
+  Given UV cordinate of a sample point, we can sample the corresponding color from a texture map. We implement two sampling strategies.
+</p>
+
+<li>
+  P_NEAREST: For (u,v), we transform it to the pixel space of the texture and find the closest pixel. We then take the color of this cloest pixel.
+</li>
+
+<li>
+  P_LINEAR: For (u,v), we transform it to the pixel space of the texture and find the 4 closest pixels. Then we take the weighted average of the colors at these four pixels, where the weight of a vertex is porpotional to the are of the rectangle opposite to it (when subdiving the square formed by four pixels with a cross centered at the sample cordinate).
+</li>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/nearest_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">1 Sample Nearest</figcaption>
+      </td>
+      <td>
+        <img src="images/nearest_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">16 Sample Nearest </figcaption>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <img src="images/bilinear_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">1 Sample Linear</figcaption>
+      </td>
+      <td>
+        <img src="images/bilinear_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">16 Sample Linear </figcaption>
+      </td>
+    </tr>
+    <br>
+  </table>
+</div>
+
+<p>Overall, Bilinear is better than Nearest, the difference is more obvious with a low sample rate. This happens because when the sample rate is sufficient large, the aliasing is reduced and the difference is less obvious. (in the practical example shown above, the disconnected white line can be fixed by supersampling because some samples in the pixel will hit the white line) </p>
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p>
+  Another Antialiasing method is to use mipmaps. Mipmaps are simply resized version of the same texture at different scale, where the level is log2 value of the scale. For exmaple, the original image is L0 and half-sized image is L1.
+</p>
+<p>
+  To perform sampling at level D at cordinate (u,v), we simply perform standard pixel sampling of the level D texture at (u,v). This can be considered as applying a low-pass filter to the texture and hence it reduces unwanted artifacts through pre-filtering. 
+</p>
+<p>
+  The level is determined by the following formula
+   $$D=log_2 \ (max(\lVert (\frac{du_p}{dx},\frac{dv_p}{dx})  \rVert_2 , \lVert (\frac{du_p}{dy},\frac{dv_p}{dy})  \rVert_2 ))$$
+</p>
+<p>
+  Where \(u_p,v_p\) are u,v cordinates in the pixel space of level 0 map \([0,width] \times [0,height]\)
+</p>
+<p>
+  In our implementation, the first order differntials are calculated by evaluating the u,v cordinates of (x,y), (x+1,y) and (x,y+1).
+</p>
+
+<p>
+  Once we obtain a real-valued level D, there are mutiple strategies available.
+</p>
+<li>
+  L_ZERO: Discard D, and always use level 0.
+</li>
+<li>
+  L_NEAREST: Map D to nearest valid level integer.
+</li>
+<li>
+  L_Linear: Sample from nearest two valid level, and perform Linear interpolation on the resulting two colors. 
+</li>
+
+<p>
+  Comparison between different methods: Supersampling has high quality results but cost large memory and computation time. In particular, the cost of both memory and time grows linearly with sample rate.
+  Linear Pixel Sampling has minimum computation and memory cost, but its improvement from baseline is limited.
+  Mipmaps has some memory cost, but it cost no more than 1/3 of the original memory size used to store textures. It also requires additional computation to compute the gradient, but is less costly than the supersampling. As a result, it leads to worse quality. In particular, it leads to undesired bluriness when the gradient in one direction is signifcantly larger than another. 
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/sample_zero_nearest.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO, P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_zero_linear.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO, P_LINEAR</figcaption>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <img src="images/sample_nearest_nearst.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST,P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_nearest_linear.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST,P_LINEAR</figcaption>
+      </td>
+    </tr>
+    <br>
+  </table>
+</div>
+
+Examples are shown above. Mipmaps + Linear Pixel Sampling leads to best result.
+<!-- <h2 align="middle">Section III: Art Competition</h2>
+<p>If you are not participating in the optional art competition, don't worry about this section!</p>
+
+<h3 align="middle">Part 7: Draw something interesting!</h3> -->
+<h3>Website Link</h3>
+
+</body>
 </html>
