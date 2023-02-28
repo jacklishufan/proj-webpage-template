@@ -1,7 +1,350 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2018</h1>
+<h1 align="middle">Project 2: Mesh Edit</h1>
+<h2 align="middle">Shufan Li, CS184-sl</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>This is a class project of CS 184 Computer Graphics at UC Berkeley. 
+	In this project, we implement algorithms to evaluate, render and manimulate Bezier Curves and Surfaces. We also implement some common edit operations on polygon mesh such as edge flip, split and loop subdivision</p>
+
+<h2 align="middle">Section I: Bezier Curves and surfaces</h2>
+
+<h3 align="middle">Part 1:  Bezier Curves</h3>
+<p>De Casteljau is an iterative algorithm which evaluate a bezier curves parametrized by t, formally, given n possible control points \(p_1,p_2,..p_n\), one step De Casteljau output n-1 intermediate points \(p'_1,p'_2,..p'_{n-1}\) defined by </p>
+$$ p'_i = (1-t)p_i+t(p_{i+1})$$
+<p>A full evaluation of the curve is achieved by iteratively applying De Casteljau  steps until there is only one point left. In practice, we create a new vector of 2D positions in each iteration and push calculated new points into it. </p>
+
+<p> We provide visualzation of different levels of evaluation</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part1-1.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">0 Step</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1-2.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">1 Step</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1-7.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">2 Step</figcaption>
+		</td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="images/part1-3.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">3 Step</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1-4.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">4 Step</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1-5.jpg" align="middle" width="300px"/>
+		  <figcaption align="middle">5 Step</figcaption>
+		</td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+
+
+<p> We also show a version of the image with control point and t moved</p>
+<div align="middle">
+	<img src="images/part1-6.jpg" align="middle" width="300px"/>
+</div>
+
+
+
+
+
+<h3 align="middle">Part 2:  Bezier Surfaces</h3>
+
+
+<p>De Casteljau can be applied to a grid nxn of points to generate 2d surfaces. A surface parameterized by (u,v) can be evaluated as follows </p>
+<li>
+  We first consider each row of control points as control points of a Bezier curve, and evaluate these curves at u, this gives us n points.
+</li>
+<li>
+  We use the resulting n points from the previous step as control points of a new Bezier curve, and evaluate this curve at v. The final result is the surface evaluated at (u,v).
+</li>
+
+<p> We show an illustration of evaluated surfaces</p>
+
+<div align="middle">
+	<img src="images/part2.jpg" align="middle" width="300px"/>
+</div>
+
+<p>In practice, our implementation follows the above step literally. We first evalaute each row at u, then push the results to a new vector of 2d positions and use it to evaluate the second curve at v using functions implemented in part 1</p>
+
+<h2 align="middle">Section II: Polygon Mesh Edits</h2>
+<h3 align="middle">Part 3: Area-weighted vertex normals</h3>
+
+<p>Directly rendering a mesh according to surface noraml can cause observable edges alongside the border of each polygon. To render a smooth transition, we calcuate the normal at each vertex and use them to interploate normals at each point on the surface</p>
+
+<p>Formally, given a vertex \( v \) and set of neighboring triangles \( S\), the area-weighted normal at \(v\) is</p>
+
+$$\frac{\sum_{s\in S} a_s N_s }{\lVert \sum_{s\in S} a_s N_s  \rVert} $$
+
+<p>
+Where \(s\) are triangles, \(a_s\)  is the area and \(N_s\) is the unit normal vector. In practice, we can get \(2 a_s N_s \) by computing the cross product of two edge vectors of a triangle. We add all the cross product together and normalize it, this gives us the desired result. The factor of two does not matter because it is applied on all triangles and
+ will be normalized in the last step. 
+</p>
+<p>We show the visual results of area-weighted normals as follows </p>
+
+ <div align="middle">
+	<table style="width:100%;align-items: center;">
+	  <tr style="text-align: center;">
+		<td>
+		  <img src="images/part3-1.jpg" align="middle" width="300px"/>
+
+		</td>
+		<td>
+		  <img src="images/part3-2.jpg" align="middle" width="300px"/>
+
+		</td>
+	  </tr>
+	  <tr style="text-align: center;">
+		<td>Before</td>
+		<td>After</td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+
+
+<h3 align="middle">Part 4: Edge Flip</h3>
+<p>
+Edge flip is defined by the following diagram.  (source: 184 website)
+</p>
+<div align="middle">
+	<img src="images/flip.jpg" align="middle" width="700px"/>
+</div>
+<p>
+	Given an edge, we first find all points, edges and surfaces in the diagram using the half-edge data structure, then we reassign all pointers so that the new structure reflects desired outputs.
+	In particular, we map BC to AD, the left surface to the top surface, the right surface to the bottom surface. For each vertex, edge, and face, we reset the haledge pointer. For each half edge, we reset the
+	its next, twin, vertex, edge, and face pointer. We ignore the boundary edges. We did not encounter and bugs during the implementation.
+</p>
+<p>We show the visual results of  as follows </p>
+
+<div align="middle">
+   <table style="width:100%;align-items: center;">
+	 <tr style="text-align: center;">
+	   <td>
+		 <img src="images/part4-1.jpg" align="middle" width="300px"/>
+
+	   </td>
+	   <td>
+		 <img src="images/part4-2.jpg" align="middle" width="300px"/>
+
+	   </td>
+	 </tr>
+	 <tr style="text-align: center;">
+	   <td>Before</td>
+	   <td>After</td>
+	 </tr>
+	 <br>
+   </table>
+ </div>
+
+ <h3 align="middle">Part 5: Edge Split</h3>
+ <p>
+ Edge split is defined by the following diagram. (source: 184 website)
+ </p>
+ <div align="middle">
+	 <img src="images/split.jpg" align="middle" width="700px"/>
+ </div>
+ <p>
+	 Given an edge, we first find all points, edges and surfaces in the diagram using the half-edge data structure. We then create a new point, 2 new faces and 3 new edges, and 6 new halfedges.
+	 The position of the new point is the numerical mean of point B and C.
+	 We map BC to NC and the left, right surfaces to left-top, right-top ones. 
+	 Then we assign (reassign for existing elements) all pointers so that the new structure reflects desired outputs.
+	 In particular, for each vertex, edge, and face, we reset the haledge pointer. For each half edge, we reset the
+	 its next, twin, vertex, edge, and face pointer. We ignore the boundary edges. We did not encounter and bugs during the implementation.
+	 We only create elements when necessary and all orginal elements are reassigned, so we do not create "isolated", unused elements.
+ </p>
+ <p>We show the visual results of  as follows </p>
+ 
+ <div align="middle">
+	<table style="width:100%;align-items: center;">
+	  <tr style="text-align: center;">
+		<td>
+		  <img src="images/part5-1.jpg" align="middle" width="300px"/>
+ 
+		</td>
+		<td>
+		  <img src="images/part5-2.jpg" align="middle" width="300px"/>
+ 
+		</td>
+		<td>
+			<img src="images/part5-3.jpg" align="middle" width="300px"/>
+   
+		  </td>
+	  </tr>
+	  <tr style="text-align: center;">
+		<td>Before</td>
+		<td>After Some Edge Split</td>
+		<td>After Some Edge Split and Flip</td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+
+  
+<h3 align="middle">Part 6: Loop Subdivision</h3>
+<p>
+  Loop subdivison is an upsampling method for geometric meshes. It first perform 1-4 split for each triangle and move new points to desired location. The new location is defined as follows.
+</p>
+
+<li>
+	(1) The position of a new vertex splitting the shared edge (A,B) between a pair of triangle (A,C,B) and (A,B,D) is
+</li>
+$$\frac{3}{8}  (A + B) + \frac{1}{8}  (C + D)$$
+<li>
+	(2) The updated position of an old vertex is
+</li>
+    $$(1 - n  u) \alpha + u  \beta $$
+	<p>
+		where \(\alpha \) is the original position of the old vertex, and and \(\beta\)  is the sum of all original positions of the neighboring vertices.
+		\(n\) is the degree of the vertex and \(u\) is \(\frac{3}{16}\) if \(n=3\) and \(\frac{3}{8n}\) otherwise
+	</p>
+
+<p> In practice, we first calculate all the position of old and new vertices. The new position of old vertices is stored in Vertex.new_position and the new position of a new vertex generated by splitting an edge
+	is stored at Edge.new_position.</p>
+<p>We then perform 1-4 split. This is performed by first splitting all edges and flip an edge that is not on the border of a triangle before split and is connecting a new vertex and an old vertex. We prevent infinite loop by finding the last edge in the stored list, and stop once we finish splitting this edge. Since all new elements
+	are inserted to the very end, we will not split any new edge and creating infinite loop. To keep track of old and new elements, we use hashsets instead of the isNew variable provided in starter code. These methods both take O(1)
+	computation time, but the former do not require restting the isNew variable for all elements before subdivision. After an new point is created by the edge split, we immediately move it to new position. Finally, we move all old vertex to new elements, thus completing the process.
+</p>
+<p>We provide some interesting analysis</p>
+<div align="middle">
+	<table style="width:100%;align-items: center;">
+
+	  <tr style="text-align: center;">
+		<td>Before</td>
+		<td>After</td>
+	  </tr>
+	  <tr style="text-align: center;">
+		<td>
+		  <img src="images/part6-5.jpg" align="middle" width="300px"/>
+ 
+		</td>
+		<td>
+		  <img src="images/part6-6.jpg" align="middle" width="300px"/>
+ 
+		</td>
+	  </tr>
+	  <tr style="text-align: center;">
+		<td>
+		  <img src="images/part6-9.jpg" align="middle" width="300px"/>
+ 
+		</td>
+		<td>
+		  <img src="images/part6-10.jpg" align="middle" width="300px"/>
+ 
+		</td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+<p> We first observe that all sharp edges are smoothed, however this can be mitigated by adding more meshes in the desired "sharp" area to prevent "oversmoothness"</p>
+
+<table style="width:100%;align-items: center;">
+
+	<tr style="text-align: center;">
+	  <td>More Subdivision</td>
+	  <td>After</td>
+	</tr>
+	<tr style="text-align: center;">
+	  <td>
+		<img src="images/part6-7.jpg" align="middle" width="300px"/>
+
+	  </td>
+	  <td>
+		<img src="images/part6-8.jpg" align="middle" width="300px"/>
+
+	  </td>
+	</tr>
+	<br>
+  </table>
+</div>
+<p> We also observe that standard cube results in asymmetry</p>
+<table style="width:100%;align-items: center;">
+
+	<tr style="text-align: center;">
+	  <td>Before</td>
+	  <td>After</td>
+	</tr>
+	<tr style="text-align: center;">
+	  <td>
+		<img src="images/part6-3.jpg" align="middle" width="300px"/>
+
+	  </td>
+	  <td>
+		<img src="images/part6-4.jpg" align="middle" width="300px"/>
+
+	  </td>
+	</tr>
+	<br>
+  </table>
+</div>
+<p>This is caused by asymmetric distribution of edges. In particular, vertices have different degree and hence there new poisions are not calculated in a uniform way</p>
+<p>We can fix this problem by spliting the diagonal of squres and ensure all vertices have same degree and local geometry</p>
+<table style="width:100%;align-items: center;">
+
+	<tr style="text-align: center;">
+	  <td>Before</td>
+	  <td>After</td>
+	</tr>
+	<tr style="text-align: center;">
+	  <td>
+		<img src="images/part6-1.jpg" align="middle" width="300px"/>
+
+	  </td>
+	  <td>
+		<img src="images/part6-2.jpg" align="middle" width="300px"/>
+
+	  </td>
+	</tr>
+	<br>
+  </table>
+</div>
+<h3 align="middle">Part 7: Draw something interesting!</h3> -->
+<h3>Website Link</h3>
+<a href="https://jacklishufan.github.io/proj-webpage-template/proj2/index.html">https://jacklishufan.github.io/proj-webpage-template/proj2/index.html</a>
+</body>
 </html>
