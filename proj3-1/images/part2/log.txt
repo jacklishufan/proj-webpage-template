@@ -1,0 +1,40 @@
+(base) jacklishufan@dgx4:~/p3-1-pathtracer-sp23-sl2023/build$ ./pathtracer -t 8 -r 800 600 -f bunny.png ../dae/sky/CBdragon.dae 
+[PathTracer] Input scene file: ../dae/sky/CBdragon.dae
+[PathTracer] Rendering using 8 threads
+[PathTracer] Collecting primitives... Done! (0.0167 sec)
+[PathTracer] Building BVH from 100012 primitives... Done! (0.0968 sec)
+[PathTracer] Rendering... 100%! (0.0852s)
+[PathTracer] BVH traced 382204 rays.
+[PathTracer] Average speed 4.4869 million rays per second.
+[PathTracer] Averaged 1.453598 intersection tests per ray.
+[PathTracer] Saving to file: bunny.png... Done!
+[PathTracer] Job completed.
+
+(base) jacklishufan@dgx4:~/p3-1-pathtracer-sp23-sl2023/build$ ./pathtracer -t 8 -r 800 600 -f bunny.png ../dae/sky/CBbunny.dae 
+[PathTracer] Input scene file: ../dae/sky/CBbunny.dae
+[PathTracer] Rendering using 8 threads
+[PathTracer] Collecting primitives... Done! (0.0041 sec)
+[PathTracer] Building BVH from 28588 primitives... Done! (0.0156 sec)
+[PathTracer] Rendering... 100%! (0.0823s)
+[PathTracer] BVH traced 273193 rays.
+[PathTracer] Average speed 3.3201 million rays per second.
+[PathTracer] Averaged 1.454583 intersection tests per ray.
+[PathTracer] Saving to file: bunny.png... Done!
+[PathTracer] Job completed.
+
+(base) jacklishufan@dgx4:~/p3-1-pathtracer-sp23-sl2023/build$ ./pathtracer -t 8 -r 800 600 -f lucy.png ../dae/sky/CBlucy.dae 
+[PathTracer] Input scene file: ../dae/sky/CBlucy.dae
+[PathTracer] Rendering using 8 threads
+[PathTracer] Collecting primitives... Done! (0.0170 sec)
+[PathTracer] Building BVH from 133796 primitives... Done! (0.0857 sec)
+[PathTracer] Rendering... 100%! (0.0887s)
+[PathTracer] BVH traced 312022 rays.
+[PathTracer] Average speed 3.5197 million rays per second.
+[PathTracer] Averaged 1.490648 intersection tests per ray.
+[PathTracer] Saving to file: lucy.png... Done!
+[PathTracer] Job completed.
+
+beast
+beetle 20.5600s 0.0886
+cow 27.7549s  0.1042s
+teaport 9.9090s 0.0951s

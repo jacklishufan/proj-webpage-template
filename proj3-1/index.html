@@ -1,7 +1,413 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 3: RayTracing</h1>
+<h2 align="middle">Shufan Li, CS184-sl2023</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>This is a class project of CS 184 Computer Graphics at UC Berkeley. 
+	In this project, we implement simple a ray tracer</p>
+
+<h2 align="middle">Section I: Ray Generation and Scene Intersection</h2>
+
+<h3 align="middle">Part 1:  Ray Generation</h3>
+<p>
+We first implement camera ray generation and sampling. Given a pixel (x,y), we sample from interval [x,x+1] x [y, y+1] as over sample point. Then the sampled cordinates is normalzed to interval [0,1] x [0,1] by dividing the cordinate with width and heigh of image.
+Given normalized cordinates (u,v), we generate ray from origin to  \(p_0 + (u,v,0) * p_1 \), where
+\(p_0 = ( -\frac{tan(hFoV)}{2},-\frac{tan(vFoV)}{2},-1 ) \), \(p_1 = ( \frac{tan(hFoV)}{2},\frac{tan(vFoV)}{2},-1 ) \), and \(*\) is the element-wise product operator. This givens us the ray in camera cordinate. The last step is to transform this ray to world cordinate. 
+<h3 align="middle">Part 2:  Scene Intersection</h3>
+We first implement triangle intersection, given ray \( r(t) = o + t d \) and triangle \(ABC\), we solve for \(r(t)=(1-b_1-b_2)A+b_1 B + b_2 C\). Linear algerba gives us a closed form solution for \(t,b_1,b_2\). There is an intersection if \(t\) is between the ray's \(t_{min}\) and \(t_{max}\), and \(1-b_1-b_2,b_1,b_2\) are within interval [0,1].
+The normal vector at intersection is given by the interploatation of the vertex normal of vertices weighted by  \(1-b_1-b_2,b_1,b_2\).
+</p>
+<p>
+We then implement sphere intersection. given ray \( r(t) = o + t d \) and sphere centered at \(c\) with radius \(R\), we solve for qudratic equation \( \lVert r(t)-c \rVert^2 = R^2 \) and find roots between the ray's \(t_{min}\) and \(t_{max}\). If there are multiple valid roots satisfying this condition, we find the closer of the two.
+</p>
+
+<p>
+In both cases, we update the ray's \(t_{max} \) after identifying a intersection point, so colser intersection will not be overwritten by further ones.
+</p>
+
+<h3 align="middle">Visualization</h3>
+We show some results of normal rendered daes.
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part1/CBempty.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">0 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part1/CBgems.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">1 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part1/CBspheres.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">2 Step</figcaption> -->
+		</td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+
+
+<h3 align="middle">Section II:  Bounding Volume Hierarchy</h3>
+
+<h3 align="middle">Implementation Details</h3>
+<p>
+Exhaustive search can be time-consuming when the number of objects in a scene is very large. BVH accelerate this process by group objects in a scene into a binary tree. 
+Each node tracks the bounding box of the set of objects represented by this node. The BVH intersection algorithms is performed recursively. If a ray does not intersect with the bounding box, we immediately terminates as there will be no intersection. Otherwise, we continue traversal. If the node is a leaf node, we check intersect for all primitives in the node. If it is not, then we check for intersection with all its children.
+</p>
+
+<p>
+In this specific implementation, the split point is the mean of the centroids of all objects in the node.  We split algong the axis with largest standard deviattion of centroid cordinates.  
+</p>
+
+<h3 align="middle">Visualization and analysis </h3>
+We show some results of normal rendered large daes.
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part2/bunny.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">0 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part2/lucy.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">1 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part2/dragon.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">2 Step</figcaption> -->
+		</td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+
+  We show perform quantative analysis of rendering time.
+  <div align="middle">
+	<table style="width:100%;border: 1px black solid;">
+		<tr>
+			<td>Scene </td> <td>CBdragon</td> <td>CBbunny</td> <td>CBlucy</td> <td>beetle</td> <td>cow</td> <td>teaport</td> 
+		</tr>
+		<tr>
+			<td>BVN </td><td>0.0852s</td> <td>0.0823s</td> <td>0.0887s</td> <td>0.0886s</td> <td>0.1042s</td> <td>0.0951s</td>
+		</tr>
+		<tr>
+			<td>no BVH</td> <td>-</td> <td>-</td> <td>-</td> <td>20.5600s</td> <td>27.7549s</td> <td>9.9090s</td>
+		</tr>
+	</table>
+  </div>
+
+  * denotes too long to render.
+  <p> It is obvious that BVH leads to significant acceleration over the exhaustive search </p>
+
+  <h3 align="middle">Section III:  Direct Lighting</h3>
+
+  <p> We use Monte Carlo Integration to calculate the direct illumination for the given point. Given outboud angle \(w_o\) , hit point \(p\), and incoming ray distribution \( P\), we calculate </p>
+
+  $$\frac{1}{N}\sum_{j=1}^{N}\frac{f_r(p,w_j\rightarrow w_o)L_i(p,w_j)cos \theta_j }{P(w_j)}$$
+
+ where \(f_r\) is the BRDF function. 
+
+<p>
+	In uniform hemisphere sampling implementation, \(L_i\) is the emission of light if there is a ray going to the direction of \(w_j\) (in world cordinate) from \(p\) hit a light and 0 otherwise. \(P\) is the uniform distribution of a hemisphere.
+	
+	</p><p>
+	In importance sampling implementation, we sample a point on the light and \(w_j\) is the direction from \(p\) to the sample point. \(L_i\) gives the light intensity if the light sample is not blocked. This is checked by shooting a ray from p to the sample point and see if it intersect other objects before the light.
+	We get the final output by looping and summing over results from each light. If a light is a point light, we only sample once.  
+</p>
+
+<p> We visualize the difference between two sample methods</p>
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>Hemisphere</td>
+		<td>
+		  <img src="images/part3/CBbunny_H_64_32.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">0 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part3/sphere_h_64_32.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">1 Step</figcaption> -->
+		</td>
+
+	  </tr>
+	  <tr>
+		<td>Importance</td>
+		<td>
+		  <img src="images/part3/CBbunny_L_64_32.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">0 Step</figcaption> -->
+		</td>
+		<td>
+		  <img src="images/part3/sphere_l_64_32.png" align="middle" width="300px"/>
+		  <!-- <figcaption align="middle">1 Step</figcaption> -->
+		</td>
+
+	  </tr>
+	  <br>
+	</table>
+  </div>
+
+  We also visulaize the difference between number of samples per light in light sampling
+  <div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_1_1.png" align="middle" width="200px"/>
+		  <figcaption align="middle">1 Sample</figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/bunny_1_4.png" align="middle" width="200px"/>
+		  <figcaption align="middle">4 Sample</figcaption>
+		</td>
+		<td>
+			<img src="images/part3/bunny_1_16.png" align="middle" width="200px"/>
+			<figcaption align="middle">16 Sample</figcaption>
+		  </td>
+		  <td>
+			<img src="images/part3/bunny_1_64.png" align="middle" width="200px"/>
+			<figcaption align="middle">64 Sample</figcaption>
+		  </td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+
+<p> It is clear that importance sampling lead to less noise over hemisphere sampling. And more samples per light leads to less noise</p>
+
+
+<h3 align="middle">Section IV:  Indirect Lighting </h3>
+<p>
+	Indirect Lighting calculation is performed by tracing the bounces of sample rays and summing over the direct lightining at all hit points (taking into consideration of hit angle and bsdf of all intermediating surfaces).  In particular, global illumination is defined by following recursive relation
+</p>
+
+$$AtLeastOneBounce(p,w_{o}) = DirectLighting(p,w_{o})+ AtLeastOneBounce(p',-w_j) f_r(p,w_j\rightarrow w_o) cos \theta_j $$
+
+* This recursion reflects the implementation for one sample, the correct physical distribution requires integrating over distribution of \(w_j\)
+<br>
+** In our implementation, the second term is divided by the probability density of \( w_j \) and a fixed continue probability for Monte Carlo integration. 
+<br>
+*** This is added to zero bounce (i.e. emission) at p to produce the final image
+
+<p>Where \(w_j\) is the bounce direction sampled by a distribution dependent on the BSDF \(f_r\) and \(p'\) is the hit point of bounce rays </p>
+<p>To prevent infinite recursion, we cap the max bounce of rays at a fixed constant. Additionally, at each iteration, there is a random probability that the recursive terminates. In which case the second term is not added.</p>
+
+
+<p> We visualize some scenes with 1024 samples and indirect lighting</p>
+
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/gl_bench.png" align="middle" />
+
+		</td>
+		<td>
+		  <img src="images/part3/gl_spheres.png" align="middle" />
+
+		</td>
+
+
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="images/part3/gl_wall.png" align="middle" />
+
+		</td>
+		<td>
+		  <img src="images/part3/bunny_s1024.png" align="middle" />
+
+		</td>
+
+
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+<p>
+  We compare a scene with only direct illumination and only in direct illumination.
+</p>
+  <div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/sphere_l_64_32.png" align="middle" />
+		  <figcaption align="middle">Bounce &lt;= 1 </figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/only_gi.png" align="middle" />
+		  <figcaption align="middle">Bounce &gt;= 2 </figcaption>
+		</td>
+
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+  <p>
+	We compare a scene with different ray depths (number of bounces).
+  </p>
+  <div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_m0.png" align="middle"    width="200px" >
+		  <figcaption align="middle">m=0 </figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/bunny_m1.png" align="middle"    width="200px" />
+		  <figcaption align="middle">m=1 </figcaption> 
+		</td>
+		<td>
+			<img src="images/part3/bunny_m2.png" align="middle"  width="200px" />
+			<figcaption align="middle">m=2</figcaption>
+		  </td>
+		  <td>
+			<img src="images/part3/bunny_m3.png" align="middle"  width="200px"  />
+			<figcaption align="middle">m=3 </figcaption>
+		  </td>
+		  <td>
+			<img src="images/part3/bunny_m100.png" align="middle"width="200px"  />
+			<figcaption align="middle">m=100 </figcaption>
+		  </td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+
+  <p>
+	We compare a scene with different samples per pixel
+  </p>
+
+  <div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_s1.png" align="middle"    width="300px" >
+		  <figcaption align="middle">s=1 </figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/bunny_s2.png" align="middle"    width="300px" />
+		  <figcaption align="middle">s=2 </figcaption> 
+		</td>
+		<td>
+			<img src="images/part3/bunny_s4.png" align="middle"  width="300px" />
+			<figcaption align="middle">s=4</figcaption>
+		</td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_s8.png" align="middle"    width="300px" >
+		  <figcaption align="middle">s=8 </figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/bunny_s16.png" align="middle"    width=300px" />
+		  <figcaption align="middle">s=16 </figcaption> 
+		</td>
+		<td>
+			<img src="images/part3/bunny_s64.png" align="middle"  width=300px" />
+			<figcaption align="middle">s=64</figcaption>
+		</td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+  <img src="images/part3/bunny_s1024.png" align="middle"  width="400px" />
+  <figcaption align="left" style="padding-left: 150px;">s=1024</figcaption>
+
+  <p>Generally, higher sample rates means less noise. </p>
+
+<h3 align="middle">Section V:  Indirect Lighting </h3>
+
+<p> While a high sample rate is important for noise-free rendering, high sample rates lead to longer rendering time. In order to speed up the rendering, we implement adapative sampling, which terminates the sampling process when it achieves a high confidence in current results.</p>
+<p> In particular, we keep track of the running mean \(\mu\) and running variance \( \sigma^2\) of illuminance in each sample. We terminate when </p>
+$$ 1.96 \cdot \frac{\sigma}{\sqrt{n}} \le max\_tolerance \cdot \mu $$
+
+<p>To keep track of running statistics, we keep track of the sum of illuminance \(s_1\) and sum of square of illuminace \(s_2\). We can recover the \(\mu\) and \(\sigma\) from</p>
+$$\mu = \frac{s_1}{n}$$
+$$\sigma^2 = \frac{1}{n-1}(s_2-\frac{s_1^2}{n})$$
+
+<p> To further reduce computation overhead, we only check termination condition once after samplesPerBatch samples.</p>
+<p> We visualize the results of adapative sampling with a heatmap of sampling rates</p>
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_ada.png" align="middle"    width="300px" >
+
+		</td>
+		<td>
+		  <img src="images/part3/sphere_ada.png" align="middle"    width="300px" />
+
+		</td>
+		<td>
+			<img src="images/part4/sphere_ada.png" align="middle"    width="300px" />
+  
+		  </td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="images/part3/bunny_rate_a.png" align="middle"    width="300px" >
+		  <figcaption align="middle">s=2048 </figcaption>
+		</td>
+		<td>
+		  <img src="images/part3/sphere_ada_rate.png" align="middle"    width=300px" />
+		  <figcaption align="middle">s=2048 </figcaption> 
+		</td>
+		<td>
+			<img src="images/part4/sphere_ada_rate.png" align="middle"    width=300px" />
+			<figcaption align="middle">s=8192 </figcaption> 
+		  </td>
+	  </tr>
+	  <br>
+	</table>
+  </div>
+
+<h3>Website Link</h3>
+<a href="https://jacklishufan.github.io/proj-webpage-template/proj3-1/index.html">https://jacklishufan.github.io/proj-webpage-template/proj3-1/index.html</a>
+</body>
 </html>
