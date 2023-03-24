@@ -1,7 +1,163 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 3: RayTracing</h1>
+<h2 align="middle">Shufan Li</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>This is a class project of CS 184 Computer Graphics at UC Berkeley. 
+	In this project, we implement additional materials for path tracer</p>
+
+<h3 align="middle">Part 1: Reflection and Refraction</h3>
+
+The pure refraction and reflection is a determinstic process where the incoming ray and reflected/refracted ray follows a fixed physical relation. For glass material, we combine the output of reflection and refraction using Schlick's reflection coefficient; 
+
+<h3 align="middle">Visualization</h3>
+We show images with different max_ray_depths
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part1_m0.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=0</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1_m1.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=1</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1_m2.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=2</figcaption>
+		</td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="images/part1_m3.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=3</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1_m4.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=4</figcaption>
+		</td>
+		<td>
+		  <img src="images/part1_m5.png" align="middle" width="300px"/>
+		  <figcaption align="middle">m=5</figcaption>
+		</td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+  <img src="images/part1_m100.png" align="middle"  width="400px" />
+  <figcaption align="left" style="padding-left: 150px;">m=100</figcaption>
+
+  
+  <br>At m=0, we observe only emission. At m=1, we observe direct lighting and reflection of m=0. So the reflective surface only reflects light sources.
+  <br>At m=2, we observe reflection of direct lightning and refraction of emission. This can be seen in the mirror reflection, where we see an image of m=1 on the sphere surface with dark ceiling.
+  <br>At m=3, we obbserve the refraction of direct lighting and reflection of rays with additional bounces.
+  <br>At m=4, we see the light spot on the wall caused by refraction.
+  <br>In general, at m, we have m-1 in the reflection and m-2 in the refraction. This is caused by the fact that reflection takes 1 bounces and refraction takes 2 bounces (entering and exiting).
+
+
+
+<h3 align="middle">Part 2: Microfacet Material</h3>
+
+<p> We implement microfacet material based on the Fresnel term and Beckmann NDF as given in the literature. We use suggested distribution \(p_\theta, p_\phi\) for our importance sampling process. </p>
+<h3 align="middle">Visualization</h3>
+<p>
+We visualize different values of \(\alpha \)</p>
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part2_5e-3.png" align="middle" width="400px"/>
+		  <figcaption align="middle">\(\alpha=0.005\)</figcaption>
+		</td>
+		<td>
+		  <img src="images/part2_5e-2.png" align="middle" width="400px"/>
+		  <figcaption align="middle">\(\alpha=0.05\)</figcaption>
+		</td>
+
+	  </tr>
+	  <tr>
+		<td>
+			<img src="images/part2_0.25.png" align="middle" width="400px"/>
+			<figcaption align="middle">\(\alpha=0.25\)</figcaption>
+		  </td>
+		<td>
+		  <img src="images/part2_0.5.png" align="middle" width="400px"/>
+		  <figcaption align="middle">\(\alpha=0.5\)</figcaption>
+		</td>
+
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+
+
+<p>
+We observe that as \(\alpha\) get smaller, the surface becomes more smooth and refelction is more clear. As \(\alpha\) gets larger, the surface is more rough and the reflection becomes blurry</p>
+
+<p>We also visualize the difference of sampling methods</p>
+
+<div align="middle">
+	<table style="width:100%">
+	  <tr>
+		<td>
+		  <img src="images/part2_uniform.png" align="middle" width="500px"/>
+		  <figcaption align="middle">Cosine hemisphere sampling</figcaption>
+		</td>
+		<td>
+		  <img src="images/part2_cosine.png" align="middle" width="500px"/>
+		  <figcaption align="middle">Importance Sampling </figcaption>
+		</td>
+	  </tr>
+
+	  <br>
+	</table>
+  </div>
+  <p> We observe that Importance Sampling leads to less noise and a higher quality output given the same sample rate </p>
+  We show perform quantative analysis of rendering time.
+
+<p> We also show an image rendered using different parameters. We looked up for parameter of silver (Ag).</p>
+<img src="images/part2_ag.png" align="middle"  width="400px" />
+<h3>Website Link</h3>
+<a href="https://jacklishufan.github.io/proj-webpage-template/proj3-1/index.html">https://jacklishufan.github.io/proj-webpage-template/proj3-1/index.html</a>
+</body>
 </html>
