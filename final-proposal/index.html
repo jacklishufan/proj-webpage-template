@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 NERF PathTracer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Final Project Proposals: Nerf Pathtracer with diverse lighting</h1>
+<!-- <table align=center>
+	<tr>
+		<span style="font-size:24px"><a href="http://homepage.jackli.org/" >Shufan Li</a>*<sup>1</sup></span> &nbsp;
+      
+	</tr>
+
+</table> -->
+
+<img src="nerf.jpg" width="1100">
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+
+We will introduce NRTL, Neural RayTracing with diverse Lighting, which extend the relighting capability of Neural RayTracing from point light to more a more diverse set of lights including area lights and directional lights. 
+
+<h2 align="middle">Problem Description</h2>
+Neural Radiance Fields is a new technique that replaces certain components of 3D reconstruction algorithms with neural networks. It has been shown to be effective in reconstructing 3D scenes and rendering novel views in real time. However,  existing techniques suffer from lack of robustness and are sensitive to variations in lighting conditions. Neural Ray Tracing [1] addresses this problem by combining NERF representation of a scene with traditional path-tracing algorithms to ground the rendering process of novel views and lightning conditions. In the experiment of the original paper, the author only explored relighting by adding and moving around point lights. We aim to explore the full potential of this method and introduce alternative lighting such as area light and directional light which are common in typical 3D scenes. 
+
+
+
+<h2 align="middle">Goals and Ojectives</h2>
+Our goal is to qualitatively improve the Neural Ray Tracing method by considering area and directional lighting. The deliverables will include the code of our implementation, images and 360 videos comparing our result versus that of Neural Ray Tracing.
+Define how you will measure the quality / performance of your system (e.g. graphs showing speedup, or quantifying accuracy).
+<br>
+We will qualitatively and quantitatively compare our results with those presented in the Knodt et al. paper. For quantitative comparisons, we will use the same metrics, PSNR and MS-SSIM, as presented in the paper.
+<br>>
+<i>What we plan to achieve</i> Adapt Neural Ray Tracing with “area lighting” and fine-tune the NeRF model for desirable results, ideally prevailing the previous method.
+<br>
+<i>What we hope to achieve if time allows:</i> Adapt and fine-tune Neural Ray Tracing with “directional lighting”.
+
+<h2 align="middle">Resources</h2>
+
+Our computation resources consisting of a number of Nvidia RTX Titan GPUs.  We plan to work on an existing Nerual Ray Tracing codebase based on pytorch framework.
+
+
+<h2 align="middle">References</h2>
+
+[1]J. Knodt, J. Bartusek, S.-H. Baek, and F. Heide, “Neural ray-tracing: Learning surfaces and reflectance for relighting and view synthesis,” arXiv preprint arXiv:2104.13562, 2021.
+
+
+</body>
+</html>
