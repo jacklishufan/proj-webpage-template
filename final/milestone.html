@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 NERF PathTracer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Final Project Proposals: Nerf Pathtracer with diverse lighting</h1>
+<!-- <table align=center>
+	<tr>
+		<span style="font-size:24px"><a href="http://homepage.jackli.org/" >Shufan Li</a>*<sup>1</sup></span> &nbsp;
+      
+	</tr>
+
+</table> -->
+
+
+<img src="nerf.jpg" width="1100">
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+
+We will introduce NRTL, Neural RayTracing with diverse Lighting, which extend the relighting capability of Neural RayTracing from point light to more a more diverse set of lights including area lights and directional lights. 
+
+<h2 align="middle">Progress Report</h2>
+We implement a RTX based Nerf pipeline according to literature. We test our preliminary implementation on the standard lego scene from NERF dataset. We pretrain our model using a standard VolSDF for 50000 epoches and futher train our ray-traced model for 25000 epochs.
+We used 2 Nvidia V100 to complete this task. We visualize results as follows
+
+<div align="middle">
+  <img src="assets/animation.gif" align="middle" width="800px"/>
+  <figcaption align="middle">We visualize our output alongside with default rendering. We also visualize a depth map and normal map</figcaption>
+</div>
+
+
+
+
+<h2 align="middle">Preliminary discussions</h2>
+As shown in the figure, we achieve visually satisfactory results. However there are still serveral rooms for improvement.
+<p>
+  1. Optimization time. Our current model takes 12 hour to train, we will explore ways to accelerate Optimization
+</p><p>
+  2. Visual Details: the model lack high frequency details. We will consider bororrow some ideas from state-of-the art such as fourier embedding to imporve the details of rendered scene.
+</p><p>
+  3. Additional light source. Since we explict represnt the scene using a rendering equation, we can add arbritary lights to the scene. We will explore environment map as well as area lights.
+</p>
+
+
+
+<h2 align="middle">References</h2>
+
+[1]J. Knodt, J. Bartusek, S.-H. Baek, and F. Heide, “Neural ray-tracing: Learning surfaces and reflectance for relighting and view synthesis,” arXiv preprint arXiv:2104.13562, 2021.
+
+
+</body>
+</html>
