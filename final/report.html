@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js">
+  </script>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 NERF PathTracer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+<!-- 
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1> -->
+<h1 align="middle">Nerf Pathtracer with diverse lighting</h1>
+<div align="middle">
+<table align="middle" width="100%">
+	<tr>
+		<span style="font-size:24px"><a href="http://homepage.jackli.org/" >Shufan Li</a>*<sup>1</sup></span> &nbsp;
+        <span style="font-size:24px"><a href="https://www.linkedin.com/in/yutengli/" >Kevin Li</a>*<sup>1</sup></span> &nbsp;
+        <span style="font-size:24px"><a href="" >Renaju Ju</a>*<sup>1</sup></span> &nbsp;
+	</tr>
+
+    <div class="is-size-5 publication-authors">
+        <span class="author-block"><sup>1</sup>Berkeley AI Research, UC Berkeley,</span>
+        <span class="author-block"><sup>*</sup>Equal Contribution</span>
+        <!-- <span class="author-block"><sup>2</sup>Meta AI Research</span>
+        <span class="author-block"><sup>3</sup>Kitware</span> -->
+    </div>
+
+</table>
+</div>
+
+
+<img src="nerf.jpg" width="1100">
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Abstract</h2>
+
+Neural RayTracing [1] extends NERF by integrating traditional ray-tracing comopnents into NERF rendering pipeline. However, it assumes a signle point light source in training and rendering, and hence can only express limit scenes. We introduce NRTL, Neural RayTracing with diverse Lighting, which extend the relighting capability of Neural RayTracing from point light to more a more diverse set of lights including directional light, spot light and environmental light. To improve our rendering results, we also implemented local normal smoothing.  
+
+<h2 align="middle">Technical approach</h2>
+<h3 align="middle">Background</h3>
+
+Neural Radiance Fields is a novel way to represent and render a scene as an alternative to traditional rastering or path-tracing pipelines. It uses neural network to encode the radiance of light rays given a spatial location and ray direction \((x,y,z,\theta,\phi)\). While standard NERF can reconstrcut a scene rather well, it trains a signle network end to end and do not have components explitcly representing geometry and lighting, hence it has limited capacity in scene editing and relighting. 
+<br>
+VolSDF extends NERF by adding a network encoding Signed Distance Field (SDF) of underlying geometry of the scene. It then converts the SDF to a spatial density function, which allows for volumetrc rendering. It uses a MLP to encode the reflectance at a spatial location \((x,y,z)\) which is independent of the viewing directions.
+<br>
+VolSDF do not have a explict light components, which makes it equivalent to "baked lighting" in traditional computer graphic language. Neural Raytracing extend this by adding separate network for lighting and occlusion. This allows easy relighting of the environment. However they only used single point light source in their experiment. 
+
+<h3 align="middle">Rendering Pipeline</h3>
+<div style="text-align: center;">
+<img src="assets/a1.png" width="500">
+</div>
+At high level, volumetric rendering is performed by ray marching. Given a camera ray, we sample multiple location along the ray and compute the reflectance at each point along the ray direction. Then we aggreagate these samples based on spatial density. Formally 
+$$ f(r_o) = \Sigma_{p \in \text{ray_marching}(r_o)} w_p f_p(r_o,p)$$
+Where \(f\) is the overall rendering equation, \(f_p \) compute the reflectance, \(r_o\) is the camera ray in inverse direction (pointing to camera), and \(w_p\) is calculated by the marching order and density estimate at each location given by VolSDF.
+<br>
+The reflectance at each point is computed by
+$$ f_p(r_o,p) = f_{direct} (r_o, r_d,p) + \frac{1}{N}\Sigma_{q,r_i \in \text{bounce_sample}(r_o,p)} f_{transmission}(q\rightarrow p) f_p(-r_i,q)$$
+
+where \(f_{transmission}\) is an MLP,and \( f_{direct} \) is given by
+
+$$ f_{direct}(r_o,r_d,p) =\Sigma_{L_i \in Lights} L_i(r_o,r_d,p,f_n(p)) f_{bsdf}(r_o,r_d,p,f_n(p)) $$
+
+Note that \(f_{bsdf}\) is an MLP that does not depend on the normal estimate function \(f_n\) directly, however normals are used to convert the incoming and outgoing rays to local normal spaces.
+
+
+<h3 align="middle">Our Contribution: Directional Light</h3>
+The original code base only implements Point Light. We first extend to a directional light.  The point light is defined body
+
+$$L_i= I \ast \frac{4 \pi}{\lVert c-p \rVert^2} \ast f_{occ}(c,p), r_d(p)= c - p$$
+
+Where \(I\) is emission, \(c\) is center, \(f_occ\) is learnt occlusion function and \(r_d\) generates the ray direction.
+We make the following modification for directional lights
+
+$$L_i= I \ast f_{occ}(p+d \ast D_{max},p), r_d(p)= d $$
+
+Where \(d\) is predefined direction and \(D_{max}\) is a large constant.
+
+
+<h3 align="middle">Our Contribution: Normal Smoothing </h3>
+
+Normals are estimated by the gradient of SDF at a point. 
+
+$$ f_n(p) = \frac{\nabla SDF(p) }{\lVert \nabla SDF(p) \rVert} $$\
+
+However, because noises in prediction, the computed gradient contains a lot of noises. To address this issue, we implement gradient smoothing by applying a mean filter of a set of neighboring points.
+
+$$ f_n(p) = \alpha \ast \frac{\nabla SDF(p) }{\lVert \nabla SDF(p) \rVert} + (1-\alpha) \ast \frac{1}{N}\Sigma_{q \in sample}  \frac{\nabla SDF(q) }{\lVert \nabla SDF(q) \rVert}$$\
+
+
+<h3 align="middle">Our Contribution: Environmental Light</h3>
+<div style="text-align: center;">
+<img src="assets/a2.png" width="200">
+</div>
+The enviornment light is computed by sampling incident rays at a hit point and intersect those rays with an imaginary environment sphere. The intersection is then converted to uv cordinates used for texture sampling.
+
+$$q\leftarrow Intersect(r_i,EnvSphere)$$
+$$(x,y,z)\leftarrow \frac{q}{\lVert q \rVert}$$
+$$(u,v)\leftarrow (\frac{atan2(x,z)}{2\pi}, \frac{asin(y)}{\pi})$$
+$$L_i = EnvMap(u,v) \ast f_{occ}(q,p),r_d(p)=r_i$$
+
+where \(p,q\) are hitpoint and intersection points. 
+
+
+
+<h2 align="middle">Results</h2>
+We visualize our final image as follows. The following image is rendered with directional light and environmental light with ray tracing enabled. It takes 12 hours to train the model on 2 Nvidia V100 GPUs and 1.5 hour to render the animation. 
+
+<div align="middle">
+  <img src="assets/animation_6.gif" align="middle" width="800px"/>
+  <figcaption align="middle">Columns are reference image, full render, only environment light, depth map</figcaption>
+</div>
+
+The enviornment is computed using an HDRI image.  We also visualize the effectiveness of each component as follows. 
+<div align="middle">
+    <img src="assets/a3.png" align="middle" width="800px"/>
+    <figcaption align="middle">The left column visulalize the effectiveness of norm smoothing. The right two columns visualize the difference between point light and directional light. </figcaption>
+  </div>
+
+As shown above norm smoothing increase image quality by filtering out high frequency artifacts. While directional light leads to visable different (and reasonable) rendering from point lights.
+
+<br>
+Since our method fully decouples lighting and geometry whereas lighting is computed in the fashion of traditional computer graphics, we can add arbritrary lights into the scene and move them around. Below we further visualize some interesting results.
+
+<div align="middle">
+    <img src="assets/animation_8.gif" align="middle" width="800px"/>
+    <figcaption align="middle">Spot(Stage) Light </figcaption>
+  </div>
+
+
+  <div align="middle">
+    <img src="assets/animation_7.gif" align="middle" width="800px"/>
+    <figcaption align="middle">Moving Point Light </figcaption>
+  </div>
+
+  <div align="middle">
+    <img src="assets/animation5.gif" align="middle" width="800px"/>
+    <figcaption align="middle">Moving Directional Light (No Ray-tracing) </figcaption>
+  </div>
+
+  <div align="middle">
+    <img src="assets/animation4.gif" align="middle" width="800px"/>
+    <figcaption align="middle">Moving Directional Light (With Ray-tracing) </figcaption>
+  </div>
+
+<h2 align="middle">Problems Encountered </h2>
+We start our codebase from the codebase of the neural ray tracing paper [1]. However, the code simply do not run and has considerable bugs. It has also not been updated and maintained. In fact, the README explictly said "WORK IN PROGRESS, things may be subtly borken".It took us considerable efforts to get the code working.
+
+<h2 align="middle">Lessons Learnt </h2>
+<p>
+    More visual richness with different lightings
+
+</p><p>
+    Algorithms learnt in CS184 can benefit ML models such as NeRF when combined
+
+</p>
+<h2 align="middle">Limitations </h2>
+The normal smoothing trick may not be necessary if the model converges to a smoother stage with longer training schedule. However we are bounded by computing resources and hence have to use this trick to get reasonable normal estimations. Additionaly, adding second bounce components significantly slows down the model, so we have to render some of our outputs at a lower resoultion and frame rate. 
+<h2 align="middle">Slides </h2>
+<iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRAatZqQmRzIFWebSXAesGk0w5BpZgly-w_aIRK2Tg4MX3EBloj8A6hKtJtglW3tP1mXWl5J5yDoWiv/embed?start=false&loop=false&delayms=3000" frameborder="0" width="960" height="569" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+<h2 align="middle">Video</h2>
+<iframe src="https://drive.google.com/file/d/16QXJ2GbiMs1E3QHCTsjO8ucng2sjyAIH/preview" frameborder="0" width="960" height="569"  allow="autoplay"></iframe>
+
+
+<h2 align="middle">Contribution of Each Team Member </h2>
+All members have equal contributions. In particular, Shufan and Kevin implemented the environmetal lighting and directional light, while Renaju worked on normal smoothing while debugging leftover bugs from original codebase. 
+<h2 align="middle">References</h2>
+
+[1]J. Knodt, J. Bartusek, S.-H. Baek, and F. Heide, “Neural ray-tracing: Learning surfaces and reflectance for relighting and view synthesis,” arXiv preprint arXiv:2104.13562, 2021.
+
+
+</body>
+</html>
